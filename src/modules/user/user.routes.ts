@@ -11,6 +11,6 @@ const middleware = new MiddleWare();
 router.post("/auth/google",verifyUserCode,userController.googleAuth);
 
 //gives list of subscribed youtube channel
-router.get("/subscription-list",middleware.authMiddleware,userController.userSubscriptionList);
+router.get("/subscribe-channel-list",middleware.authMiddleware,userController.userSubscriptionList);
 
 export default router;
