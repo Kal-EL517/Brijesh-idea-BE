@@ -2,9 +2,15 @@
 export const Message = {
     INTERNAL_SERVER_ERROR : 'Something Went wrong',
     USER_SIGNIN_SUCCESS : 'User signin Successfully',
-    NOT_AUTHORIZED : 'You are not authorized! Please login first'
+    NOT_AUTHORIZED : 'You are not authorized! Please login first',
+    USER_SUBSCRIPTION_LIST : 'User subscription list',
+    CHANNEL_DETAILS : 'Channel Details'
 }
 
+export const sortOrder = {
+  ASC : 1,
+  DESC : -1
+}
 
 export const Codes = {
   // 1xx - Informational
@@ -52,4 +58,6 @@ export const Codes = {
   GATEWAY_TIMEOUT: 504,
   HTTP_VERSION_NOT_SUPPORTED: 505,
 } as const;
+
+
 

@@ -3,9 +3,10 @@ import { ResponseUtil } from "../../utils/response.util";
 import googleClient from '../../utils/googleClient';
 import { google } from "googleapis";
 import { JwtUtil } from "../../utils/jwt.utility";
-import { Message } from "../../utils/message.utils";
+import { Message, sortOrder } from "../../utils/message.utils";
 import { YoutubeService } from "../../services/youtubeService";
-import { ObjectId } from "mongoose";
+import { SubscribeChannelModel } from "../../models/subscribeChannel.model";
+import { Utils } from "../../utils/utils";
 
 export class UserService {
 
@@ -97,17 +98,107 @@ export class UserService {
         }
     }
 
-    public async userSubscriptionList(userId:string | ObjectId) {
+    public async userSubscriptionList(userId: any, sort_by: any = 'title', order: any = sortOrder.ASC) {
+
+        // check in DB
+        const userSubscribeChannel = await SubscribeChannelModel.find(
+            {
+                userId: userId
+            }
+        ).sort(
+            {
+                [sort_by]: order
+            }
+        );
+
+        if (userSubscribeChannel?.length) {
+            return ResponseUtil.success(Message.USER_SUBSCRIPTION_LIST, {
+                result: userSubscribeChannel,
+                totalResult: userSubscribeChannel.length,
+                isFromDB: true
+            });
+        }
+
+        //fetch from Youtube API and Save in DB
+        else {
+            const youtubeClient = await this.youtubeService.getYouTubeClient(userId);
+
+            let res = await youtubeClient.subscriptions.list({
+                part: ["snippet", "contentDetails"],
+                mine: true,
+                maxResults: 25,
+            });
+
+            if (res?.data?.items?.length) {
+                const result = res?.data?.items?.map((channel: any) => {
+                    const details = {
+                        title: channel.snippet.title,
+                        description: channel.snippet.description,
+                        resourceId: channel.snippet.resourceId,
+                        thumbnails: channel.snippet.thumbnails,
+                        userId: userId
+                    }
+                    return details;
+                });
+
+                if (result.length) {
+                    await SubscribeChannelModel.create(result);
+                }
+                return ResponseUtil.success(Message.USER_SUBSCRIPTION_LIST, {
+                    result,
+                    totalResult: res.data.pageInfo.totalResults,
+                    isFromDB: false
+                });
+            }
+
+            return ResponseUtil.success(Message.USER_SUBSCRIPTION_LIST, {
+                result: [],
+                totalResult: 0,
+                isFromDB: false
+            });
+        }
+
+    }
+
+    public async channelDetailsByChannelId(userId: any, channel_id: string) {
         const youtubeClient = await this.youtubeService.getYouTubeClient(userId);
 
-        // console.log(youtubeClient);
-        const res = await youtubeClient.subscriptions.list({
-            part: ["snippet", "contentDetails"],
-            mine: true,
-            maxResults: 25,     
+        const res = await youtubeClient.channels.list({
+            part: ["snippet", "contentDetails", "statistics"],
+            id: [channel_id], // channel ID here
         });
-        return ResponseUtil.success('user subscription list', {
-            res
+
+        return ResponseUtil.success(Message.CHANNEL_DETAILS, {
+            result: res.data.items[0],
+        });
+    }
+
+     public async channelPlaylistByChannelId(userId: any, channel_id: string,playlist_id : string) {
+        const youtubeClient = await this.youtubeService.getYouTubeClient(userId);
+
+        const res = await youtubeClient.playlists.list({
+            part: ["snippet", "contentDetails"],
+            channelId: channel_id, // channel ID here
+            maxResults: 25
+        });
+
+        return ResponseUtil.success(Message.CHANNEL_DETAILS, {
+            res,
+        });
+    }
+
+     public async videoPlayLists(userId: any , playlist_id : string) {
+        const youtubeClient = await this.youtubeService.getYouTubeClient(userId);
+
+        const res = await youtubeClient.playlistItems.list({
+            part: ["snippet", "contentDetails"],
+            playlistId : playlist_id,
+            maxResults: 25
+        });
+
+        return ResponseUtil.success(Message.CHANNEL_DETAILS, {
+            result : res?.data?.items,
+            totalResults : res?.data?.pageInfo?.totalResults
         });
     }
 
