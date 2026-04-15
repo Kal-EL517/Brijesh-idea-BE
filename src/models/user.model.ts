@@ -19,7 +19,6 @@ export interface IUser extends Document {
   createdAt: Date;
   updatedAt: Date;
   requestDate: Date;
-  isDeleted: boolean;
 }
 
 // Create schema with all fields from the interface
