@@ -18,6 +18,7 @@ export interface IUser extends Document {
   google_expiry_date: number;
   createdAt: Date;
   updatedAt: Date;
+  requestDate: Date;
 }
 
 // Create schema with all fields from the interface
